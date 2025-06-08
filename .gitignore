@@ -1,6 +1,9 @@
 # Credentials file containing sensitive information
 credentials.h
 
+# AI generated files
+.claude/
+
 # IDE and build files
 .vscode/
 .pio/
