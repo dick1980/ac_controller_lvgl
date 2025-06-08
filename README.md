@@ -55,6 +55,9 @@ ac_controller_lvgl/
 ├── credentials.h.template      # Template voor credentials
 ├── ac_units_config.h           # AC unit configuratie en teksten
 ├── mqtt_config.h               # MQTT topic configuratie en mappings
+├── hardware_config.h           # Hardware pin en timing configuratie
+├── ui_config.h                 # UI layout, kleuren en theming
+├── translations.h              # Tekst strings en vertalingen
 ├── lv_conf.h                   # LVGL configuratie
 ├── lvgl_screens.cpp            # Main screen en loading screen
 ├── lvgl_unit_screen.cpp        # Unit detail screen
@@ -82,6 +85,26 @@ Het systeem is opgedeeld in modulaire configuratie bestanden:
 - WiFi SSID en wachtwoord
 - MQTT broker configuratie
 - Production mode schakelaar
+
+**`hardware_config.h`**:
+- ESP32-2432S028 pin definities
+- Touch controller configuratie
+- Display en SPI instellingen
+- Timing intervals en buffer sizes
+- Validatie macros
+
+**`ui_config.h`**:
+- Layout afmetingen en posities
+- Kleurenschema en theming
+- Font configuratie
+- Button sizes en modal configuratie
+- UI helper macros en functies
+
+**`translations.h`**:
+- Nederlandse UI teksten
+- Debug en status berichten
+- Formatteer helpers
+- Toekomstige meertalige ondersteuning
 
 ### AC Unit Data Structuur
 

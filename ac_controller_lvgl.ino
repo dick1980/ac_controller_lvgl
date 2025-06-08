@@ -10,16 +10,9 @@
 #include "credentials.h"
 #include "ac_units_config.h"
 #include "mqtt_config.h"
-
-// Touch controller pins for ESP32-2432S028
-#define XPT2046_CS 33
-#define XPT2046_IRQ 36
-#define XPT2046_MOSI 32
-#define XPT2046_MISO 39
-#define XPT2046_CLK 25
-
-// Backlight pin
-#define TFT_BL 21  // Backlight control pin
+#include "hardware_config.h"
+#include "ui_config.h"
+#include "translations.h"
 
 // Network and MQTT configuration (loaded from credentials.h)
 const char* ssid = WIFI_SSID;
@@ -41,7 +34,7 @@ bool productionMode = PRODUCTION_MODE;
 bool testMode = false; // Change to false for normal operation
 
 // Create separate SPI instance for touch controller
-SPIClass touchSPI = SPIClass(HSPI);
+SPIClass touchSPI = SPIClass(TOUCH_SPI_INSTANCE);
 
 // Create touchscreen instance with IRQ pin
 XPT2046_Touchscreen ts(XPT2046_CS, XPT2046_IRQ);
@@ -51,9 +44,9 @@ TFT_eSPI tft = TFT_eSPI();
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
-// LVGL display buffer - further reduced size to save memory
-static lv_color_t buf1[TFT_WIDTH * 3]; // Even smaller buffer to prevent freezing
-static lv_color_t buf2[TFT_WIDTH * 3];
+// LVGL display buffer - configured from hardware config
+static lv_color_t buf1[LVGL_BUFFER_SIZE];
+static lv_color_t buf2[LVGL_BUFFER_SIZE];
 
 // LVGL display driver
 static lv_display_t *display;
@@ -63,7 +56,7 @@ static lv_indev_t *indev;
 
 // Screen control variables
 int currentPage = 0;
-int unitsPerPage = 4;
+int unitsPerPage = UI_UNITS_PER_PAGE;
 int selectedUnit = -1;
 
 // AC units and related arrays are now loaded from ac_units_config.h
@@ -131,8 +124,8 @@ static void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data) {
   // Use global touch state first (set in the main loop)
   if (g_is_touched) {
     // Map raw touch coordinates to screen coordinates
-    uint16_t x = map(g_touch_x, 300, 3800, 0, TFT_WIDTH);
-    uint16_t y = map(g_touch_y, 300, 3800, 0, TFT_HEIGHT);
+    uint16_t x = map(g_touch_x, TOUCH_RAW_MIN, TOUCH_RAW_MAX, 0, TFT_WIDTH);
+    uint16_t y = map(g_touch_y, TOUCH_RAW_MIN, TOUCH_RAW_MAX, 0, TFT_HEIGHT);
     
     // Ensure coordinates are within screen boundaries
     x = constrain(x, 0, TFT_WIDTH-1);
@@ -159,8 +152,8 @@ static void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data) {
     TS_Point p = ts.getPoint();
     
     // Map raw touch coordinates to screen coordinates
-    uint16_t x = map(p.x, 300, 3800, 0, TFT_WIDTH);
-    uint16_t y = map(p.y, 300, 3800, 0, TFT_HEIGHT);
+    uint16_t x = map(p.x, TOUCH_RAW_MIN, TOUCH_RAW_MAX, 0, TFT_WIDTH);
+    uint16_t y = map(p.y, TOUCH_RAW_MIN, TOUCH_RAW_MAX, 0, TFT_HEIGHT);
     
     // Ensure coordinates are within screen boundaries
     x = constrain(x, 0, TFT_WIDTH-1);
@@ -209,9 +202,9 @@ static void update_data_timer(lv_timer_t *timer) {
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(SERIAL_BAUD_RATE);
   delay(1000); // Allow serial to initialize
-  DEBUG_PRINTLN("\n\nAC Controller with LVGL starting...");
+  DEBUG_PRINTLN(TXT_DEBUG_AC_STARTING);
   
   // Set backlight pin as output and turn it on
   pinMode(TFT_BL, OUTPUT);
@@ -219,16 +212,16 @@ void setup() {
   
   // Initialize display
   tft.init();
-  tft.setRotation(0); // Portrait mode as requested
+  tft.setRotation(TFT_ROTATION); // Portrait mode from config
   
   // Initialize touchscreen with custom SPI - exactly as in the working touch test
   touchSPI.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
   if (!ts.begin(touchSPI)) {
-    DEBUG_PRINTLN("ERROR: Touch controller initialization failed!");
+    DEBUG_PRINTLN(TXT_DEBUG_TOUCH_INIT_FAILED);
   } else {
-    DEBUG_PRINTLN("Touch controller initialized successfully");
+    DEBUG_PRINTLN(TXT_DEBUG_TOUCH_INIT_SUCCESS);
   }
-  ts.setRotation(0); // Portrait mode
+  ts.setRotation(TFT_ROTATION); // Match display rotation
   
   // Initialize LVGL
   Serial.println("Initializing LVGL...");
@@ -264,8 +257,8 @@ void setup() {
   lv_indev_set_display(indev, display);
   
   // Set long press time to make touch more responsive
-  lv_indev_set_long_press_time(indev, 400);
-  lv_indev_set_scroll_limit(indev, 5);
+  lv_indev_set_long_press_time(indev, INDEV_LONG_PRESS_TIME);
+  lv_indev_set_scroll_limit(indev, INDEV_SCROLL_LIMIT);
   
   // Force the input device to be active
   Serial.println("Activating touch input device...");
@@ -317,7 +310,7 @@ void setup() {
     }
     
     // Create timer for periodic UI updates even in test mode
-    lv_timer_create(update_data_timer, 2000, NULL);
+    lv_timer_create(update_data_timer, DATA_UPDATE_INTERVAL, NULL);
     
     // Show main screen immediately
     lv_scr_load(mainScreen);
@@ -388,7 +381,7 @@ void setup() {
       }
       
       // Create timer for periodic updates
-      lv_timer_create(update_data_timer, 2000, NULL);
+      lv_timer_create(update_data_timer, DATA_UPDATE_INTERVAL, NULL);
       
       // Show main screen
       lv_scr_load(mainScreen);
@@ -425,8 +418,8 @@ void loop() {
     }
     mqttClient.loop();
     
-    // Check MQTT connection status periodically (every 10 seconds)
-    if (now - last_connection_check > 10000) {
+    // Check MQTT connection status periodically
+    if (now - last_connection_check > CONNECTION_CHECK_INTERVAL) {
       if (!mqttClient.connected()) {
         Serial.println("WARNING: MQTT connection lost! Attempting to reconnect...");
         reconnect();
@@ -436,7 +429,7 @@ void loop() {
   }
   
   // Check for touch events directly (for debugging)
-  if (now - last_touch_check > 10 && !g_processing_touch) { // Check every 10ms, avoid recursive processing
+  if (now - last_touch_check > TOUCH_CHECK_INTERVAL && !g_processing_touch) { // Check touch, avoid recursive processing
     // Set processing flag to prevent recursive calls
     g_processing_touch = true;
     
@@ -475,7 +468,7 @@ void loop() {
   }
   
   // Handle LVGL tasks more frequently
-  if (now - last_lvgl_update > 5) { // Process LVGL tasks every 5ms for smoother UI
+  if (now - last_lvgl_update > LVGL_TIMER_INTERVAL) { // Process LVGL tasks for smoother UI
     lv_timer_handler(); // This will process any pending touch events via the callback
     last_lvgl_update = now;
   }
@@ -643,7 +636,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
 // Update data for a specific unit
 void updateUnitData(int unitIndex) {
-  if (unitIndex < 0 || unitIndex >= numUnits) return;
+  if (!VALIDATE_UNIT_INDEX(unitIndex)) return;
   
   ACUnit *unit = &acUnits[unitIndex];
   
@@ -652,7 +645,7 @@ void updateUnitData(int unitIndex) {
     static unsigned long lastTempUpdate = 0;
     unsigned long now = millis();
     
-    if (now - lastTempUpdate > 30000) { // Update every 30 seconds
+    if (now - lastTempUpdate > TEST_MODE_TEMP_UPDATE) { // Update temperature simulation
       // Simulate small temperature fluctuations
       float tempChange = (random(-20, 21) / 100.0); // -0.2 to +0.2 degrees
       unit->currentTemp += tempChange;
@@ -684,7 +677,7 @@ void updateAllUnits() {
 
 // Set AC power state
 void setACPower(int unitIndex, bool state) {
-  if (unitIndex < 0 || unitIndex >= numUnits) return;
+  if (!VALIDATE_UNIT_INDEX(unitIndex)) return;
   
   ACUnit *unit = &acUnits[unitIndex];
   
@@ -709,7 +702,7 @@ void setACPower(int unitIndex, bool state) {
 
 // Set AC mode
 void setACMode(int unitIndex, uint8_t mode) {
-  if (unitIndex < 0 || unitIndex >= numUnits || mode > 4) return;
+  if (!VALIDATE_UNIT_INDEX(unitIndex) || !VALIDATE_MODE(mode)) return;
   
   ACUnit *unit = &acUnits[unitIndex];
   
@@ -735,7 +728,7 @@ void setACMode(int unitIndex, uint8_t mode) {
 
 // Set AC fan speed
 void setACFanSpeed(int unitIndex, uint8_t speed) {
-  if (unitIndex < 0 || unitIndex >= numUnits || speed > 3) return; // Updated to allow speed 3 (powerful)
+  if (!VALIDATE_UNIT_INDEX(unitIndex) || !VALIDATE_FAN_SPEED(speed)) return;
   
   ACUnit *unit = &acUnits[unitIndex];
   
@@ -761,7 +754,7 @@ void setACFanSpeed(int unitIndex, uint8_t speed) {
 
 // Set AC swing mode
 void setACSwing(int unitIndex, uint8_t mode) {
-  if (unitIndex < 0 || unitIndex >= numUnits) return;
+  if (!VALIDATE_UNIT_INDEX(unitIndex) || !VALIDATE_SWING_MODE(mode)) return;
   
   ACUnit *unit = &acUnits[unitIndex];
   
@@ -787,7 +780,7 @@ void setACSwing(int unitIndex, uint8_t mode) {
 
 // Set AC target temperature
 void setACTemperature(int unitIndex, float temp) {
-  if (unitIndex < 0 || unitIndex >= numUnits) return;
+  if (!VALIDATE_UNIT_INDEX(unitIndex)) return;
   
   ACUnit *unit = &acUnits[unitIndex];
   
