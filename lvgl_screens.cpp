@@ -1,5 +1,5 @@
 #include <lvgl.h>
-#include "ac_controller_lvgl.h"
+#include "src/ac_controller_lvgl.h"
 
 // Create the loading screen
 void createLoadingScreen() {
@@ -173,7 +173,7 @@ void createMainScreen() {
   pageIndicator = lv_label_create(paginationRow);
   lv_label_set_text(pageIndicator, "Pagina 1/3");
   lv_obj_align(pageIndicator, LV_ALIGN_CENTER, 0, 0);
-  lv_obj_set_style_text_font(pageIndicator, &lv_font_montserrat_12, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_font(pageIndicator, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_text_color(pageIndicator, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
 }
 
@@ -253,7 +253,7 @@ void updateMainScreen() {
       lv_obj_t *tempLabel = lv_label_create(unitCards[i]);
       lv_label_set_text(tempLabel, tempStr);
       lv_obj_align(tempLabel, LV_ALIGN_RIGHT_MID, -30, 0);
-      lv_obj_set_style_text_font(tempLabel, &lv_font_montserrat_12, LV_PART_MAIN | LV_STATE_DEFAULT);
+      lv_obj_set_style_text_font(tempLabel, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
       lv_obj_set_style_text_color(tempLabel, lv_color_hex(0x3FC1C9), LV_PART_MAIN | LV_STATE_DEFAULT);
       
       // Status info removed as requested

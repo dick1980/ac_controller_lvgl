@@ -50,61 +50,58 @@ Een geavanceerde airconditioning controller interface voor de ESP32-2432S028 dev
 ```
 ac_controller_lvgl/
 ├── ac_controller_lvgl.ino      # Main application file
-├── ac_controller_lvgl.h        # Header met declarations
-├── credentials.h               # WiFi en MQTT inloggegevens (NIET in git)
-├── credentials.h.template      # Template voor credentials
-├── ac_units_config.h           # AC unit configuratie en teksten
-├── mqtt_config.h               # MQTT topic configuratie en mappings
-├── hardware_config.h           # Hardware pin en timing configuratie
-├── ui_config.h                 # UI layout, kleuren en theming
-├── translations.h              # Tekst strings en vertalingen
-├── lv_conf.h                   # LVGL configuratie
-├── lvgl_screens.cpp            # Main screen en loading screen
-├── lvgl_unit_screen.cpp        # Unit detail screen
-├── lvgl_master_control.cpp     # Master control functies
+├── README.md                   # Deze documentatie
 ├── .gitignore                  # Git ignore file
-└── README.md                   # Deze documentatie
+├── config/                     # Configuration files
+│   ├── README.md              # Configuration guide
+│   ├── credentials.h          # WiFi en MQTT inloggegevens (NIET in git)
+│   ├── credentials.h.template # Template voor credentials
+│   ├── ac_units_config.h      # AC unit configuratie en teksten
+│   ├── mqtt_config.h          # MQTT topic configuratie en mappings
+│   ├── hardware_config.h      # Hardware pin en timing configuratie
+│   ├── ui_config.h            # UI layout, kleuren en theming
+│   └── translations.h         # Tekst strings en vertalingen
+├── src/                       # Core source files
+│   ├── README.md              # Source documentation
+│   ├── ac_controller_lvgl.h   # Header met declarations
+│   └── lv_conf.h              # LVGL configuratie
+└── ui/                        # User interface components
+    ├── README.md              # UI documentation
+    ├── lvgl_screens.cpp       # Main screen en loading screen
+    ├── lvgl_unit_screen.cpp   # Unit detail screen
+    └── lvgl_master_control.cpp # Master control functies
 ```
 
 ### Modulaire Architectuur
 
-Het systeem is opgedeeld in modulaire configuratie bestanden:
+Het systeem gebruikt een georganiseerde directory structuur met duidelijke scheiding van verantwoordelijkheden:
 
-**`ac_units_config.h`**: 
-- AC unit definities en namen
-- Nederlandse UI teksten voor modes, fan speeds, swing modes
-- Engelse MQTT communicatie teksten
+#### **`config/` Directory**
+Alle configuratie bestanden voor eenvoudige aanpassing:
+- **`credentials.h`** - Beveiligde WiFi/MQTT instellingen (niet in git)
+- **`ac_units_config.h`** - AC unit definities en namen
+- **`mqtt_config.h`** - MQTT communicatie mappings
+- **`hardware_config.h`** - Hardware pins en timing
+- **`ui_config.h`** - Visuele styling en layout
+- **`translations.h`** - Tekst strings en talen
 
-**`mqtt_config.h`**:
-- MQTT topic structuren en constanten
-- Helper functies voor topic generatie
-- Conversie functies tussen UI indices en MQTT strings
-- Centralized MQTT command/status mappings
+#### **`src/` Directory**  
+Core broncode en headers:
+- **`ac_controller_lvgl.h`** - Hoofdstructuren en functie declaraties
+- **`lv_conf.h`** - LVGL bibliotheek configuratie
 
-**`credentials.h`** (niet in git):
-- WiFi SSID en wachtwoord
-- MQTT broker configuratie
-- Production mode schakelaar
+#### **`ui/` Directory**
+User interface componenten:
+- **`lvgl_screens.cpp`** - Hoofd- en laadschermen
+- **`lvgl_unit_screen.cpp`** - Unit controle schermen
+- **`lvgl_master_control.cpp`** - Master controle paneel
 
-**`hardware_config.h`**:
-- ESP32-2432S028 pin definities
-- Touch controller configuratie
-- Display en SPI instellingen
-- Timing intervals en buffer sizes
-- Validatie macros
-
-**`ui_config.h`**:
-- Layout afmetingen en posities
-- Kleurenschema en theming
-- Font configuratie
-- Button sizes en modal configuratie
-- UI helper macros en functies
-
-**`translations.h`**:
-- Nederlandse UI teksten
-- Debug en status berichten
-- Formatteer helpers
-- Toekomstige meertalige ondersteuning
+#### **Voordelen van de Structuur**
+- **Duidelijke scheiding**: Configuratie, core code, en UI apart
+- **Eenvoudige aanpassing**: Wijzig alleen configuratie bestanden
+- **Onderhoudbaar**: Logische groepering van gerelateerde code
+- **Uitbreidbaar**: Nieuwe features eenvoudig toe te voegen
+- **Veilig**: Credentials geïsoleerd en uitgesloten van version control
 
 ### AC Unit Data Structuur
 
@@ -345,10 +342,10 @@ Wanneer `PRODUCTION_MODE = true`:
 - Voorkomt informatielekken via serial console
 
 ### Setup Instructions voor Credentials
-1. Kopieer `credentials.h.template` naar `credentials.h`
+1. Kopieer `config/credentials.h.template` naar `config/credentials.h`
 2. Vul je eigen WiFi en MQTT gegevens in
 3. Stel `PRODUCTION_MODE` in op `true` voor productie deployments
-4. Het `credentials.h` bestand wordt automatisch genegeerd door git
+4. Het `config/credentials.h` bestand wordt automatisch genegeerd door git
 
 ## Installatiehandleiding
 

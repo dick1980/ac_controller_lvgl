@@ -1,7 +1,7 @@
 #ifndef AC_UNITS_CONFIG_H
 #define AC_UNITS_CONFIG_H
 
-#include "ac_controller_lvgl.h"
+#include "../src/ac_controller_lvgl.h"
 
 // Define all AC units based on the current configuration
 ACUnit acUnits[] = {

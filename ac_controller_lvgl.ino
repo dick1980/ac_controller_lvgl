@@ -6,13 +6,13 @@
 
 #include <SPI.h>
 #include <PubSubClient.h>
-#include "ac_controller_lvgl.h"
-#include "credentials.h"
-#include "ac_units_config.h"
-#include "mqtt_config.h"
-#include "hardware_config.h"
-#include "ui_config.h"
-#include "translations.h"
+#include "src/ac_controller_lvgl.h"
+#include "config/credentials.h"
+#include "config/ac_units_config.h"
+#include "config/mqtt_config.h"
+#include "config/hardware_config.h"
+#include "config/ui_config.h"
+#include "config/translations.h"
 
 // Network and MQTT configuration (loaded from credentials.h)
 const char* ssid = WIFI_SSID;
